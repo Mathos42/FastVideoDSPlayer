@@ -33,6 +33,10 @@ CFLAGS	:=	-g -Wall -O3\
 			$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM9
+# be lenient on missing prototypes: some devkitARM/GCC updates turned
+# -Wimplicit-function-declaration from a warning into a hard error, which
+# breaks this (older) codebase even where the functions are in fact fine.
+CFLAGS	+=	-Wno-error=implicit-function-declaration -Wno-implicit-function-declaration
 CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s $(INCLUDE) 
