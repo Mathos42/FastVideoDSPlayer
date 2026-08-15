@@ -1,6 +1,7 @@
 #include <nds.h>
 #include <string.h>
 #include <strings.h>
+#include <nds/fifocommon.h>
 #include "isdprint.h"
 #include "../../common/ipc.h"
 #include "fat.h"
