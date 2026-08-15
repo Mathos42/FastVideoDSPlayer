@@ -1,5 +1,6 @@
 #pragma once
 #include "../../common/fastVideo.h"
+#include "../../common/ipc.h"
 #include "fat/ff.h"
 #include "fpsAdjust.h"
 
@@ -13,6 +14,10 @@ typedef struct
     FIL file;
     fpsa_t fpsa;
     u32 nrKeyFrames;
+    // directory (without trailing slash) and file name of the currently
+    // open video, kept so we can look up the previous/next video file
+    char curDir[FV_MAX_PATH_LEN];
+    char curName[FV_MAX_PATH_LEN];
     // u32 curVideoFrame;
     int queueReadPtr;
     int queueWritePtr;

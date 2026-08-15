@@ -1,5 +1,6 @@
 #include <nds.h>
 #include <string.h>
+#include <strings.h>
 #include "isdprint.h"
 #include "../../common/ipc.h"
 #include "fat.h"
@@ -201,6 +202,116 @@ static u32 gotoNearestKeyFrame(u32 frame, u32* resultFrame)
     return keyFrameId;
 }
 
+// remembers the directory and file name of the currently open video so that
+// findAdjacentFvFile() can later look up its previous/next sibling
+static void rememberCurPath(const char* path)
+{
+    const char* lastSlash = strrchr(path, '/');
+    if (lastSlash)
+    {
+        int dirLen = lastSlash - path;
+        if (dirLen >= (int)sizeof(sPlayer.curDir))
+            dirLen = sizeof(sPlayer.curDir) - 1;
+        memcpy(sPlayer.curDir, path, dirLen);
+        sPlayer.curDir[dirLen] = 0;
+        strncpy(sPlayer.curName, lastSlash + 1, sizeof(sPlayer.curName) - 1);
+        sPlayer.curName[sizeof(sPlayer.curName) - 1] = 0;
+    }
+    else
+    {
+        sPlayer.curDir[0] = 0;
+        strncpy(sPlayer.curName, path, sizeof(sPlayer.curName) - 1);
+        sPlayer.curName[sizeof(sPlayer.curName) - 1] = 0;
+    }
+}
+
+static bool hasFvExtension(const char* name)
+{
+    int len = strlen(name);
+    return len > 3 && strcasecmp(name + len - 3, ".fv") == 0;
+}
+
+// looks for the previous (direction < 0) or next (direction > 0) ".fv" file,
+// alphabetically (case-insensitive) and wrapping around, in the directory of
+// the currently open video. On success writes the full path of the found
+// file into outPath (must be at least FV_MAX_PATH_LEN bytes) and returns true
+static bool findAdjacentFvFile(int direction, char* outPath)
+{
+    DIR dir;
+    FILINFO info;
+    static char best[FV_MAX_PATH_LEN];
+    static char edge[FV_MAX_PATH_LEN]; // smallest/largest overall, for wraparound
+    bool haveBest = false;
+    bool haveEdge = false;
+
+    const char* dirPath = sPlayer.curDir[0] ? sPlayer.curDir : ".";
+
+    if (f_opendir(&dir, dirPath) != FR_OK)
+        return false;
+
+    while (f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
+    {
+        if (info.fattrib & AM_DIR)
+            continue;
+        if (!hasFvExtension(info.fname))
+            continue;
+
+        int cmpToCur = strcasecmp(info.fname, sPlayer.curName);
+
+        if (direction > 0)
+        {
+            if (cmpToCur > 0 && (!haveBest || strcasecmp(info.fname, best) < 0))
+            {
+                strncpy(best, info.fname, sizeof(best) - 1);
+                best[sizeof(best) - 1] = 0;
+                haveBest = true;
+            }
+            if (!haveEdge || strcasecmp(info.fname, edge) < 0)
+            {
+                strncpy(edge, info.fname, sizeof(edge) - 1);
+                edge[sizeof(edge) - 1] = 0;
+                haveEdge = true;
+            }
+        }
+        else
+        {
+            if (cmpToCur < 0 && (!haveBest || strcasecmp(info.fname, best) > 0))
+            {
+                strncpy(best, info.fname, sizeof(best) - 1);
+                best[sizeof(best) - 1] = 0;
+                haveBest = true;
+            }
+            if (!haveEdge || strcasecmp(info.fname, edge) > 0)
+            {
+                strncpy(edge, info.fname, sizeof(edge) - 1);
+                edge[sizeof(edge) - 1] = 0;
+                haveEdge = true;
+            }
+        }
+    }
+
+    f_closedir(&dir);
+
+    const char* chosen = haveBest ? best : (haveEdge ? edge : NULL);
+    if (!chosen || strcasecmp(chosen, sPlayer.curName) == 0)
+        return false; // no other .fv file found
+
+    if (sPlayer.curDir[0])
+    {
+        size_t dirLen = strlen(sPlayer.curDir);
+        memcpy(outPath, sPlayer.curDir, dirLen);
+        outPath[dirLen] = '/';
+        strncpy(outPath + dirLen + 1, chosen, FV_MAX_PATH_LEN - dirLen - 2);
+    }
+    else
+    {
+        strncpy(outPath, chosen, FV_MAX_PATH_LEN - 1);
+    }
+    outPath[FV_MAX_PATH_LEN - 1] = 0;
+
+    return true;
+}
+
 static void handleFifo(u32 value)
 {
     UINT br;
@@ -236,11 +347,32 @@ static void handleFifo(u32 value)
 
         case IPC_CMD_OPEN_FILE:
         {
-            FRESULT result = f_open(&sPlayer.file, (const char*)(value & IPC_CMD_ARG_MASK), FA_OPEN_EXISTING | FA_READ);
+            const char* path = (const char*)(value & IPC_CMD_ARG_MASK);
+            f_close(&sPlayer.file); // no-op if nothing was open yet
+            FRESULT result = f_open(&sPlayer.file, path, FA_OPEN_EXISTING | FA_READ);
             if (result != FR_OK)
                 fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_OPEN_FILE, 0));
             else
+            {
+                rememberCurPath(path);
                 fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_OPEN_FILE, 1));
+            }
+            break;
+        }
+
+        case IPC_CMD_FIND_NEXT_FILE:
+        {
+            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
+            bool found = findAdjacentFvFile(1, outPath);
+            fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_FIND_NEXT_FILE, found ? 1 : 0));
+            break;
+        }
+
+        case IPC_CMD_FIND_PREV_FILE:
+        {
+            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
+            bool found = findAdjacentFvFile(-1, outPath);
+            fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_FIND_PREV_FILE, found ? 1 : 0));
             break;
         }
 
