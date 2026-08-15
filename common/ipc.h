@@ -6,8 +6,15 @@
 #define IPC_CMD_READ_HEADER           4
 #define IPC_CMD_GOTO_KEYFRAME         5
 #define IPC_CMD_GOTO_NEAREST_KEYFRAME 6
+#define IPC_CMD_FIND_NEXT_FILE        7
+#define IPC_CMD_FIND_PREV_FILE        8
 #define IPC_CMD_SETUP_DLDI            13
 #define IPC_CMD_HANDSHAKE             15
+
+// max length (including null terminator) of a path written by
+// IPC_CMD_FIND_NEXT_FILE / IPC_CMD_FIND_PREV_FILE into the buffer
+// whose address is passed as the command argument
+#define FV_MAX_PATH_LEN 256
 
 #define IPC_CMD_ARG_MASK       0x0FFFFFFF
 #define IPC_CMD_CMD_SHIFT      28
