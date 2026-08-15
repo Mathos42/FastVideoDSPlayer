@@ -1,5 +1,6 @@
 #include <nds.h>
 #include <stdio.h>
+#include <string.h>
 #include "../../common/ipc.h"
 #include "FastVideo/fvDecoder.h"
 #include "FastVideo/fvMcData.h"
@@ -13,6 +14,50 @@ static DTCM_BSS fv_player_t sPlayer;
 static PlayerController* sPlayerController;
 
 extern u8 gDldiStub[];
+
+// scratch buffer used to receive the previous/next path found by the arm7
+// (must be writable by the arm7 CPU, so plain main RAM, and cacheline
+// aligned so we can safely invalidate it)
+static char sAdjacentPath[FV_MAX_PATH_LEN] ALIGN(32);
+
+static bool sCanUseWram;
+
+// Loads and starts the video at path. Destroys/replaces the current player
+// and controller as needed. Returns false if the video could not be loaded
+// (in which case there is no active player/controller anymore).
+static bool loadAndStartVideo(const char* path)
+{
+    if (sPlayerController)
+    {
+        delete sPlayerController;
+        sPlayerController = NULL;
+        fv_destroyPlayer(&sPlayer);
+    }
+
+    if (!fv_initPlayer(&sPlayer, path, sCanUseWram))
+        return false;
+
+    sPlayerController = new PlayerController(&sPlayer);
+    sPlayerController->Initialize();
+    fv_startPlayer(&sPlayer);
+    return true;
+}
+
+// Asks the arm7 for the previous/next ".fv" file (alphabetically) in the
+// same folder as the video currently playing, and switches to it if found.
+// If no other ".fv" file exists, the current video keeps playing.
+static void switchToAdjacentVideo(bool next)
+{
+    fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(next ? IPC_CMD_FIND_NEXT_FILE : IPC_CMD_FIND_PREV_FILE,
+                                               (u32)sAdjacentPath));
+    fifoWaitValue32(FIFO_USER_01);
+    u32 found = fifoGetValue32(FIFO_USER_01) & IPC_CMD_ARG_MASK;
+    if (!found)
+        return; // no other video found next to the current one, keep playing
+
+    DC_InvalidateRange(sAdjacentPath, sizeof(sAdjacentPath));
+    loadAndStartVideo(sAdjacentPath);
+}
 
 int main(int argc, char** argv)
 {
@@ -39,6 +84,8 @@ int main(int argc, char** argv)
 
     if (canUseWram && (handShake & IPC_CMD_ARG_MASK) == 0)
         canUseWram = false;
+
+    sCanUseWram = canUseWram;
 
     if (!isDSiMode())
     {
@@ -77,15 +124,22 @@ int main(int argc, char** argv)
         filePath = argv[1];
 
     // iprintf("Playing %s\n", filePath);
-    if (fv_initPlayer(&sPlayer, filePath, canUseWram))
+    if (loadAndStartVideo(filePath))
     {
-        sPlayerController = new PlayerController(&sPlayer);
-        sPlayerController->Initialize();
-        fv_startPlayer(&sPlayer);
-        while (1)
-            sPlayerController->Update();
+        while (sPlayerController)
+        {
+            PlayerController::NavAction action = sPlayerController->Update();
+            if (action == PlayerController::NAV_ACTION_NEXT)
+                switchToAdjacentVideo(true);
+            else if (action == PlayerController::NAV_ACTION_PREV)
+                switchToAdjacentVideo(false);
+        }
     }
-    fv_destroyPlayer(&sPlayer);
+    if (sPlayerController)
+    {
+        delete sPlayerController;
+        fv_destroyPlayer(&sPlayer);
+    }
     while (1)
         swiWaitForVBlank();
 
