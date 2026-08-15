@@ -14,7 +14,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitarm
+    # pinned to a date before libnds v2.0 ("calico"), which removed the
+    # classic FIFO API (fifoSendValue32/FIFO_USER_*) this project relies on
+    container: devkitpro/devkitarm:20240918
     name: Build with Docker using devkitARM
     steps:
       - name: Checkout repo
