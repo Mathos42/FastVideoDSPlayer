@@ -7,7 +7,7 @@
 PlayerController::PlayerController(fv_player_t* player)
     : _subScreenState(SUB_SCREEN_STATE_ACTIVE), _subScreenStateCounter(0), _subBacklightOff(false), _player(player),
       _playing(true), _lastTime(-1), _seekPenDown(false), _playPausePenDown(false), _seekLastFrame(-1),
-      _inputRepeater(KEY_LEFT | KEY_RIGHT, 12, 3)
+      _inputRepeater(KEY_LEFT | KEY_RIGHT, 12, 3), _pendingNavAction(NAV_ACTION_NONE)
 {
 }
 
@@ -97,6 +97,17 @@ void PlayerController::UpdateTouch()
 
 void PlayerController::UpdateKeys()
 {
+    if (_inputProvider.Triggered(KEY_R))
+    {
+        _pendingNavAction = NAV_ACTION_NEXT;
+        return;
+    }
+    if (_inputProvider.Triggered(KEY_L))
+    {
+        _pendingNavAction = NAV_ACTION_PREV;
+        return;
+    }
+
     if (_inputProvider.Current(KEY_LID))
     {
         // pause when lid is closed
@@ -188,7 +199,7 @@ void PlayerController::UpdateDim()
     }
 }
 
-void PlayerController::Update()
+PlayerController::NavAction PlayerController::Update()
 {
     _view.SetPlaying(_playing);
     if (_playing)
@@ -224,4 +235,8 @@ void PlayerController::Update()
     UpdateTouch();
     UpdateKeys();
     UpdateDim();
+
+    NavAction action = _pendingNavAction;
+    _pendingNavAction = NAV_ACTION_NONE;
+    return action;
 }
