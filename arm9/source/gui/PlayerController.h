@@ -12,7 +12,8 @@ public:
     {
         NAV_ACTION_NONE,
         NAV_ACTION_NEXT,
-        NAV_ACTION_PREV
+        NAV_ACTION_PREV,
+        NAV_ACTION_EXIT
     };
 
 private:
@@ -59,8 +60,10 @@ public:
     void Initialize();
 
     // Returns NAV_ACTION_NEXT/NAV_ACTION_PREV if the user requested to
-    // switch videos this frame (L = previous, R = next), NAV_ACTION_NONE
-    // otherwise. The caller is expected to stop calling Update() on this
-    // controller and load the new video when this returns non-none.
+    // switch videos this frame (L = previous, R = next), NAV_ACTION_EXIT
+    // if the user requested to quit (B), NAV_ACTION_NONE otherwise. The
+    // caller is expected to stop calling Update() on this controller and
+    // handle the request (load the new video / exit) when this returns
+    // non-none.
     NavAction Update();
 };

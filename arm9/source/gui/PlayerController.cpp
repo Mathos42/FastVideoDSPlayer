@@ -97,6 +97,11 @@ void PlayerController::UpdateTouch()
 
 void PlayerController::UpdateKeys()
 {
+    if (_inputProvider.Triggered(KEY_B))
+    {
+        _pendingNavAction = NAV_ACTION_EXIT;
+        return;
+    }
     if (_inputProvider.Triggered(KEY_R))
     {
         _pendingNavAction = NAV_ACTION_NEXT;
