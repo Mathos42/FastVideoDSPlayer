@@ -205,9 +205,15 @@ bool fv_initPlayer(fv_player_t* player, const char* filePath, bool useWram)
 {
     memset(player, 0, sizeof(fv_player_t));
     if (isDSiMode() && twr_isUnlocked() && useWram)
+    {
         player->dataBuffer = (u8*)twr_getBlockAddress(TWR_WRAM_BLOCK_B);
+        player->dataBufferIsHeap = false;
+    }
     else
+    {
         player->dataBuffer = memalign(32, FV_PLAYER_DATA_BUFFER_SIZE * FV_PLAYER_DATA_BUFFER_COUNT);
+        player->dataBufferIsHeap = true;
+    }
     player->fvHeader = memalign(32, sizeof(fv_header_t));
     player->dataBufferReadIdx = 0;
     player->dataBufferWriteIdx = 0;
@@ -274,8 +280,9 @@ bool fv_initPlayer(fv_player_t* player, const char* filePath, bool useWram)
 void fv_destroyPlayer(fv_player_t* player)
 {
     fifoSetValue32Handler(FIFO_USER_01, NULL, NULL);
-    if (!isDSiMode())
+    if (player->dataBufferIsHeap)
         free(player->dataBuffer);
+    free(player->fvHeader);
 }
 
 ITCM_CODE void fv_startPlayer(fv_player_t* player)
