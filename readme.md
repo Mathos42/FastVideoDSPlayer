@@ -24,5 +24,5 @@ Lecteur pour le format FastVideoDS. Sur votre carte SD avec TWiLight Menu++ d'in
 ### Toucher
 L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de se déplacer dans la vidéo en appuyant ou en faisant glisser la barre de défilement.
 
-## Libraries Utilisées
+## Librairies Utilisées
 - [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)
