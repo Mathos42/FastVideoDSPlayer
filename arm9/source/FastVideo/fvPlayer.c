@@ -60,7 +60,9 @@ static ITCM_CODE void fifoHandler(u32 value, void* arg)
         u32 length = value & IPC_CMD_ARG_MASK;
         if (length == 0)
         {
-            // todo: this means the video has ended
+            // this means the video has ended: let the main loop stop
+            // playback/audio cleanly (and possibly move on to another video)
+            player->videoEnded = true;
             return;
         }
         player->frameDataSizes[player->dataBufferWriteIdx] = length;
@@ -221,7 +223,10 @@ bool fv_initPlayer(fv_player_t* player, const char* filePath, bool useWram)
     fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_OPEN_FILE, filePath));
     fifoWaitValue32(FIFO_USER_01);
     if ((fifoGetValue32(FIFO_USER_01) & IPC_CMD_ARG_MASK) == 0)
+    {
+        iprintf("DEBUG: f_open failed\n(fichier introuvable)\n");
         return false;
+    }
 
     // open file and read header
     DC_InvalidateRange(player->fvHeader, sizeof(fv_header_t));
@@ -229,9 +234,15 @@ bool fv_initPlayer(fv_player_t* player, const char* filePath, bool useWram)
     fifoWaitValue32(FIFO_USER_01);
     player->vblankPerFrame = fifoGetValue32(FIFO_USER_01) & IPC_CMD_ARG_MASK;
     if (player->fvHeader->signature != FV_SIGNATURE)
+    {
+        iprintf("DEBUG: bad signature\n0x%lX (attendu 0x%lX)\n", player->fvHeader->signature, (unsigned long)FV_SIGNATURE);
         return false;
+    }
     if (player->vblankPerFrame == 0)
+    {
+        iprintf("DEBUG: vblankPerFrame=0\n");
         return false;
+    }
 
     int height = player->fvHeader->height;
 

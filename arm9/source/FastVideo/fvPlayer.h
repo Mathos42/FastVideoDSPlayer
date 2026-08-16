@@ -40,6 +40,7 @@ typedef struct
     int lastKeyFrame;
     volatile bool seekComplete;
     volatile bool isPlaying;
+    volatile bool videoEnded; // set once the last frame has been received
 } fv_player_t;
 
 #ifdef __cplusplus
