@@ -30,6 +30,7 @@ static bool loadAndStartVideo(const char* path)
 {
     if (sPlayerController)
     {
+        fv_pausePlayer(&sPlayer); // stop audio cleanly before tearing down
         delete sPlayerController;
         sPlayerController = NULL;
         fv_destroyPlayer(&sPlayer);
