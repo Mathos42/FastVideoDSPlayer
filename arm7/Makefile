@@ -27,11 +27,12 @@ ARCH	:=	-mthumb-interwork -mcpu=arm7tdmi -mtune=arm7tdmi
 CFLAGS	:=	-g -Wall -O2 -fomit-frame-pointer -ffast-math -ffunction-sections -fdata-sections $(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM7
+CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-rtti
 # be lenient on missing prototypes: some devkitARM/GCC updates turned
 # -Wimplicit-function-declaration from a warning into a hard error, which
 # breaks this (older) codebase even where the functions are in fact fine.
+# (C-only warning, so added after CXXFLAGS is derived from CFLAGS)
 CFLAGS	+=	-Wno-error=implicit-function-declaration -Wno-implicit-function-declaration
-CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-rtti
 
 
 ASFLAGS	:=	-g $(ARCH)

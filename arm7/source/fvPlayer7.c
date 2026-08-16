@@ -308,15 +308,22 @@ static bool findAdjacentFvFile(int direction, char* outPath)
     if (sPlayer.curDir[0])
     {
         size_t dirLen = strlen(sPlayer.curDir);
+        if (dirLen > FV_MAX_PATH_LEN - 2)
+            dirLen = FV_MAX_PATH_LEN - 2; // guard against a (very) long directory path
         memcpy(outPath, sPlayer.curDir, dirLen);
         outPath[dirLen] = '/';
-        strncpy(outPath + dirLen + 1, chosen, FV_MAX_PATH_LEN - dirLen - 2);
+        size_t avail = FV_MAX_PATH_LEN - dirLen - 2; // space left for chosen + null terminator
+        size_t chosenLen = strlen(chosen);
+        if (chosenLen > avail)
+            chosenLen = avail;
+        memcpy(outPath + dirLen + 1, chosen, chosenLen);
+        outPath[dirLen + 1 + chosenLen] = 0;
     }
     else
     {
         strncpy(outPath, chosen, FV_MAX_PATH_LEN - 1);
+        outPath[FV_MAX_PATH_LEN - 1] = 0;
     }
-    outPath[FV_MAX_PATH_LEN - 1] = 0;
 
     return true;
 }
