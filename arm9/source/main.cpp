@@ -50,10 +50,10 @@ static bool loadAndStartVideo(const char* path)
 // If no other ".fv" file exists, the current video keeps playing.
 static void switchToAdjacentVideo(bool next)
 {
-    fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(next ? IPC_CMD_FIND_NEXT_FILE : IPC_CMD_FIND_PREV_FILE,
+    fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(next ? IPC_CMD_FIND_NEXT_FILE : IPC_CMD_FIND_PREV_FILE,
                                                (u32)sAdjacentPath));
-    fifoWaitValue32(FIFO_USER_01);
-    u32 found = fifoGetValue32(FIFO_USER_01) & IPC_CMD_ARG_MASK;
+    fifoWaitValue32(FIFO_USER_02);
+    u32 found = fifoGetValue32(FIFO_USER_02) & IPC_CMD_ARG_MASK;
     if (!found)
         return; // no other video found next to the current one, keep playing
 
