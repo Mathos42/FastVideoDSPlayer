@@ -38,7 +38,10 @@ static bool loadAndStartVideo(const char* path)
     }
 
     if (!fv_initPlayer(&sPlayer, path, sCanUseWram))
+    {
+        fv_destroyPlayer(&sPlayer); // free whatever fv_initPlayer allocated before failing
         return false;
+    }
 
     sPlayerController = new PlayerController(&sPlayer);
     sPlayerController->Initialize();
