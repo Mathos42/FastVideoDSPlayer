@@ -201,6 +201,16 @@ void PlayerController::UpdateDim()
 
 PlayerController::NavAction PlayerController::Update()
 {
+    if (_player->videoEnded && _playing)
+    {
+        // the video reached its end: stop audio/playback cleanly (instead of
+        // leaving the last audio buffer looping forever) and try to move on
+        // to the next video in the same folder, if there is one
+        fv_pausePlayer(_player);
+        _playing = false;
+        _pendingNavAction = NAV_ACTION_NEXT;
+    }
+
     _view.SetPlaying(_playing);
     if (_playing)
     {
