@@ -17,9 +17,17 @@
 
 static fv_player7_t sPlayer;
 
+static void handleFindFile(u32 value, void* userdata);
+
 void fv_init(void)
 {
     memset(&sPlayer, 0, sizeof(sPlayer));
+    // dedicated channel for prev/next-video lookups: FIFO_USER_01 already
+    // has fv_initPlayer's frame-reading handler registered on the arm9
+    // side while a video is playing, so a synchronous wait on that same
+    // channel would never see our response (it gets routed straight to
+    // that handler instead of being queued)
+    fifoSetValue32Handler(FIFO_USER_02, handleFindFile, NULL);
 }
 
 static inline int getAudioTimerValue(int rate)
@@ -313,6 +321,28 @@ static bool findAdjacentFvFile(int direction, char* outPath)
     return true;
 }
 
+static void handleFindFile(u32 value, void* userdata)
+{
+    switch (value >> IPC_CMD_CMD_SHIFT)
+    {
+        case IPC_CMD_FIND_NEXT_FILE:
+        {
+            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
+            bool found = findAdjacentFvFile(1, outPath);
+            fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(IPC_CMD_FIND_NEXT_FILE, found ? 1 : 0));
+            break;
+        }
+
+        case IPC_CMD_FIND_PREV_FILE:
+        {
+            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
+            bool found = findAdjacentFvFile(-1, outPath);
+            fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(IPC_CMD_FIND_PREV_FILE, found ? 1 : 0));
+            break;
+        }
+    }
+}
+
 static void handleFifo(u32 value)
 {
     UINT br;
@@ -358,22 +388,6 @@ static void handleFifo(u32 value)
                 rememberCurPath(path);
                 fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_OPEN_FILE, 1));
             }
-            break;
-        }
-
-        case IPC_CMD_FIND_NEXT_FILE:
-        {
-            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
-            bool found = findAdjacentFvFile(1, outPath);
-            fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_FIND_NEXT_FILE, found ? 1 : 0));
-            break;
-        }
-
-        case IPC_CMD_FIND_PREV_FILE:
-        {
-            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
-            bool found = findAdjacentFvFile(-1, outPath);
-            fifoSendValue32(FIFO_USER_01, IPC_CMD_PACK(IPC_CMD_FIND_PREV_FILE, found ? 1 : 0));
             break;
         }
 
