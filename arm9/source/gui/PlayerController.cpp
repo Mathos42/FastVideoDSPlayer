@@ -102,12 +102,12 @@ void PlayerController::UpdateKeys()
         _pendingNavAction = NAV_ACTION_EXIT;
         return;
     }
-    if (_inputProvider.Triggered(KEY_R))
+    if (_inputProvider.Triggered(KEY_R) || _inputProvider.Triggered(KEY_X))
     {
         _pendingNavAction = NAV_ACTION_NEXT;
         return;
     }
-    if (_inputProvider.Triggered(KEY_L))
+    if (_inputProvider.Triggered(KEY_L) || _inputProvider.Triggered(KEY_Y))
     {
         _pendingNavAction = NAV_ACTION_PREV;
         return;
