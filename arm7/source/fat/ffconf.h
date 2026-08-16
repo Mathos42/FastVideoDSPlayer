@@ -117,7 +117,7 @@
 /  ff_memfree() in ffsystem.c, need to be added to the project. */
 
 
-#define FF_LFN_UNICODE	0
+#define FF_LFN_UNICODE	2
 /* This option switches the character encoding on the API when LFN is enabled.
 /
 /   0: ANSI/OEM in current CP (TCHAR = char)
@@ -126,7 +126,13 @@
 /   3: Unicode in UTF-32 (TCHAR = DWORD)
 /
 /  Also behavior of string I/O functions will be affected by this option.
-/  When LFN is not enabled, this option has no effect. */
+/  When LFN is not enabled, this option has no effect.
+/
+/  Set to 2 (UTF-8) because file paths passed in by launchers such as
+/  TWiLight Menu++ (via argv) are UTF-8 encoded; with the previous ANSI/OEM
+/  setting, file/folder names containing accented characters (é, è, à, ...)
+/  would fail to match, causing f_open() to fail as if the file didn't
+/  exist. TCHAR stays `char` in both modes so no other code needs to change. */
 
 
 #define FF_LFN_BUF		255
