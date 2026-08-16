@@ -125,13 +125,8 @@ int main(int argc, char** argv)
     if (argc >= 2)
         filePath = argv[1];
 
-    iprintf("FastVideoDS (debug)\n");
-    iprintf("argc=%d\n", argc);
-    iprintf("path: %s\n", filePath);
-
     if (loadAndStartVideo(filePath))
     {
-        iprintf("loadAndStartVideo: OK\n");
         while (sPlayerController)
         {
             PlayerController::NavAction action = sPlayerController->Update();
@@ -143,8 +138,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        iprintf("loadAndStartVideo: FAILED\n");
-        iprintf("(fichier introuvable ou\n invalide)\n");
+        // could not load the (initial) video: nothing to do but wait
     }
     if (sPlayerController)
     {
