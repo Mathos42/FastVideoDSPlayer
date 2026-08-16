@@ -1,4 +1,4 @@
-FastVideoDS Player 2
+FastVideoDSPlayer 2
 ===================
 Lecteur pour le format FastVideoDS. Sur votre carte SD avec TWiLight Menu++ d'installé, mettre le fichier FastVideoDS.nds dans "_nds\apps" puis lancez vos vidéos. Utilisez [FastVideoDS Encoder](https://github.com/Gericom/FastVideoDSEncoder) pour encoder vos vidéos.
 
