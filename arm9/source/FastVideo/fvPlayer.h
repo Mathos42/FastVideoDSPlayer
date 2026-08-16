@@ -41,6 +41,7 @@ typedef struct
     volatile bool seekComplete;
     volatile bool isPlaying;
     volatile bool videoEnded; // set once the last frame has been received
+    bool dataBufferIsHeap; // true if dataBuffer was memalign()'d and needs freeing (as opposed to pointing into WRAM)
 } fv_player_t;
 
 #ifdef __cplusplus
