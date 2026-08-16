@@ -30,7 +30,7 @@ L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de 
 --------------------------------------------------------------------------------------
 
 FastVideoDSPlayer 2
-
+===================
 A player for the FastVideoDS format. On your SD card with TWiLight Menu++ installed, place the FastVideoDS.nds file in the ‘_nds\apps’ folder, then play your videos. Use [FastVideoDS Encoder](https://github.com/Gericom/FastVideoDSEncoder) to encode your videos.
 
 ## Features
@@ -55,5 +55,5 @@ A player for the FastVideoDS format. On your SD card with TWiLight Menu++ instal
 ### Touch
 The touchscreen allows you to play or pause the video, as well as navigate through it by tapping or dragging the scroll bar.
 
-##Libraries Used
+## Libraries Used
 - [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)
