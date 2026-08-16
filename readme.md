@@ -26,3 +26,34 @@ L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de 
 
 ## Librairies Utilisées
 - [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)
+
+--------------------------------------------------------------------------------------
+
+FastVideoDSPlayer 2
+
+A player for the FastVideoDS format. On your SD card with TWiLight Menu++ installed, place the FastVideoDS.nds file in the ‘_nds\apps’ folder, then play your videos. Use [FastVideoDS Encoder](https://github.com/Gericom/FastVideoDSEncoder) to encode your videos.
+
+## Features
+-    Support for long videos
+-    Smooth playback by adjusting the LCD refresh rate to an integer multiple of the frame rate
+-    Supports up to 60 frames per second on the DSi (approximately 30 frames per second on the DS)
+-    Uses the 3D engine for motion compensation
+-    Loads data from the SD card and decodes audio on the ARM7 processor, whilst the ARM9 processor is fully available for video decoding
+-    Support for Argv (for use with TWiLight Menu++, for example)
+-    Video controls: play/pause, next video, previous video, auto-play next video in the folder and keyframe search
+-    Disables the lower screen’s backlight during playback to save power
+
+## Controls
+### Buttons
+-    A – Play/pause
+-    Left D-pad – Skip to previous keyframe (hold down to continue)
+-    Right D-pad – Skip to the next keyframe (hold down to continue)
+-    L/Y – Previous video
+-    R/X – Next video
+-    B – Return to the video list
+
+### Touch
+The touchscreen allows you to play or pause the video, as well as navigate through it by tapping or dragging the scroll bar.
+
+##Libraries Used
+- [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)
