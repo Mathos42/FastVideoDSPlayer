@@ -1,6 +1,7 @@
 #include <nds.h>
 #include <nds/fifocommon.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../../common/ipc.h"
 #include "FastVideo/fvDecoder.h"
@@ -134,6 +135,8 @@ int main(int argc, char** argv)
                 switchToAdjacentVideo(true);
             else if (action == PlayerController::NAV_ACTION_PREV)
                 switchToAdjacentVideo(false);
+            else if (action == PlayerController::NAV_ACTION_EXIT)
+                break;
         }
     }
     else
@@ -145,8 +148,7 @@ int main(int argc, char** argv)
         delete sPlayerController;
         fv_destroyPlayer(&sPlayer);
     }
-    while (1)
-        swiWaitForVBlank();
 
-    return 0;
+    // hand control back to the launcher (TWiLight Menu++, nds-bootstrap, ...)
+    exit(0);
 }
