@@ -89,7 +89,8 @@ static void switchToAdjacentVideo(bool next)
         return; // no other video found next to the current one, keep playing
 
     DC_InvalidateRange(sAdjacentPath, sizeof(sAdjacentPath));
-    loadAndStartVideo(sAdjacentPath);
+    if (loadAndStartVideo(sAdjacentPath))
+        ShowVideoMessage();
 }
 
 // Asks the arm7 for a random ".fv" file (other than the current one) in the
@@ -103,7 +104,8 @@ static void switchToRandomVideo()
         return; // no other video found next to the current one, keep playing
 
     DC_InvalidateRange(sAdjacentPath, sizeof(sAdjacentPath));
-    loadAndStartVideo(sAdjacentPath);
+    if (loadAndStartVideo(sAdjacentPath))
+        ShowVideoMessage();
 }
 
 int main(int argc, char** argv)
@@ -172,6 +174,7 @@ int main(int argc, char** argv)
 
     if (loadAndStartVideo(filePath))
     {
+        ShowVideoMessage();
         bool shouldExit = false;
         while (sPlayerController && !shouldExit)
         {
@@ -194,7 +197,10 @@ int main(int argc, char** argv)
 
                 case PlayerController::NAV_ACTION_VIDEO_ENDED:
                     if (sLoopEnabled)
-                        loadAndStartVideo(sCurPath);
+                    {
+                        if (loadAndStartVideo(sCurPath))
+                            ShowVideoMessage();
+                    }
                     else if (sRandomEnabled)
                         switchToRandomVideo();
                     else
@@ -208,10 +214,6 @@ int main(int argc, char** argv)
 
                 case PlayerController::NAV_ACTION_TOGGLE_RANDOM:
                     sRandomEnabled = !sRandomEnabled;
-                    ShowVideoMessage();
-                    break;
-
-                case PlayerController::NAV_ACTION_SHOW_INFO:
                     ShowVideoMessage();
                     break;
 
