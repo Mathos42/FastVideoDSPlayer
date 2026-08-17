@@ -57,12 +57,6 @@ void PlayerController::UpdateTouch()
         {
             _playPausePenDown = true;
         }
-        else
-        {
-            // tapped anywhere else on the touch screen: show the info toast
-            // (filename + loop/random state) on demand
-            _pendingNavAction = NAV_ACTION_SHOW_INFO;
-        }
     }
 
     if (_inputProvider.Released(KEY_TOUCH))
