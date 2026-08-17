@@ -14,6 +14,11 @@ static u16 sVBlankTime;
 static u16 sLastVBlankTime;
 static int sSleepCounter = 0;
 
+// free-running frame counter, used purely as a pseudo-random seed for
+// "random video" selection: the exact frame on which the user presses a
+// button is unpredictable enough for this non-cryptographic use case
+volatile u32 gFrameCounter = 0;
+
 enum
 {
     KEYXY_TOUCH = (1 << 6),
@@ -67,6 +72,7 @@ static void inputGetAndSendNew(void)
 
 void VblankHandler(void)
 {
+    gFrameCounter++;
     inputGetAndSendNew();
     if (0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R)))
         exitflag = true;

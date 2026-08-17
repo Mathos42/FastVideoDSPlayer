@@ -17,6 +17,8 @@
 
 static fv_player7_t sPlayer;
 
+extern volatile u32 gFrameCounter; // defined in main.c, incremented every VBlank
+
 static void handleFindFile(u32 value, void* userdata);
 
 void fv_init(void)
@@ -242,6 +244,32 @@ static bool hasFvExtension(const char* name)
 
 // looks for the previous (direction < 0) or next (direction > 0) ".fv" file,
 // alphabetically (case-insensitive) and wrapping around, in the directory of
+// joins sPlayer.curDir + "/" + name into outPath (bounds-checked)
+static void joinCurDirAndName(const char* name, char* outPath)
+{
+    if (sPlayer.curDir[0])
+    {
+        size_t dirLen = strlen(sPlayer.curDir);
+        if (dirLen > FV_MAX_PATH_LEN - 2)
+            dirLen = FV_MAX_PATH_LEN - 2; // guard against a (very) long directory path
+        memcpy(outPath, sPlayer.curDir, dirLen);
+        outPath[dirLen] = '/';
+        size_t avail = FV_MAX_PATH_LEN - dirLen - 2; // space left for name + null terminator
+        size_t nameLen = strlen(name);
+        if (nameLen > avail)
+            nameLen = avail;
+        memcpy(outPath + dirLen + 1, name, nameLen);
+        outPath[dirLen + 1 + nameLen] = 0;
+    }
+    else
+    {
+        strncpy(outPath, name, FV_MAX_PATH_LEN - 1);
+        outPath[FV_MAX_PATH_LEN - 1] = 0;
+    }
+}
+
+// looks for the previous (direction < 0) or next (direction > 0) ".fv" file,
+// alphabetically (case-insensitive) and wrapping around, in the directory of
 // the currently open video. On success writes the full path of the found
 // file into outPath (must be at least FV_MAX_PATH_LEN bytes) and returns true
 static bool findAdjacentFvFile(int direction, char* outPath)
@@ -305,27 +333,65 @@ static bool findAdjacentFvFile(int direction, char* outPath)
     if (!chosen || strcasecmp(chosen, sPlayer.curName) == 0)
         return false; // no other .fv file found
 
-    if (sPlayer.curDir[0])
-    {
-        size_t dirLen = strlen(sPlayer.curDir);
-        if (dirLen > FV_MAX_PATH_LEN - 2)
-            dirLen = FV_MAX_PATH_LEN - 2; // guard against a (very) long directory path
-        memcpy(outPath, sPlayer.curDir, dirLen);
-        outPath[dirLen] = '/';
-        size_t avail = FV_MAX_PATH_LEN - dirLen - 2; // space left for chosen + null terminator
-        size_t chosenLen = strlen(chosen);
-        if (chosenLen > avail)
-            chosenLen = avail;
-        memcpy(outPath + dirLen + 1, chosen, chosenLen);
-        outPath[dirLen + 1 + chosenLen] = 0;
-    }
-    else
-    {
-        strncpy(outPath, chosen, FV_MAX_PATH_LEN - 1);
-        outPath[FV_MAX_PATH_LEN - 1] = 0;
-    }
-
+    joinCurDirAndName(chosen, outPath);
     return true;
+}
+
+// picks a random ".fv" file (other than the current one) in the directory of
+// the currently open video, without needing to store the full file list:
+// pass 1 counts eligible files, pass 2 walks again down to a randomly picked
+// index. On success writes the full path into outPath and returns true.
+static bool findRandomFvFile(char* outPath)
+{
+    DIR dir;
+    FILINFO info;
+
+    const char* dirPath = sPlayer.curDir[0] ? sPlayer.curDir : ".";
+
+    // pass 1: count eligible files (excluding the current one)
+    if (f_opendir(&dir, dirPath) != FR_OK)
+        return false;
+    u32 count = 0;
+    while (f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
+    {
+        if (info.fattrib & AM_DIR)
+            continue;
+        if (!hasFvExtension(info.fname))
+            continue;
+        if (strcasecmp(info.fname, sPlayer.curName) == 0)
+            continue;
+        count++;
+    }
+    f_closedir(&dir);
+
+    if (count == 0)
+        return false; // no other .fv file found
+
+    u32 pick = gFrameCounter % count;
+
+    // pass 2: walk again down to the picked index
+    if (f_opendir(&dir, dirPath) != FR_OK)
+        return false;
+    bool found = false;
+    while (f_readdir(&dir, &info) == FR_OK && info.fname[0] != 0)
+    {
+        if (info.fattrib & AM_DIR)
+            continue;
+        if (!hasFvExtension(info.fname))
+            continue;
+        if (strcasecmp(info.fname, sPlayer.curName) == 0)
+            continue;
+        if (pick == 0)
+        {
+            joinCurDirAndName(info.fname, outPath);
+            found = true;
+            break;
+        }
+        pick--;
+    }
+    f_closedir(&dir);
+
+    return found;
 }
 
 static void handleFindFile(u32 value, void* userdata)
@@ -345,6 +411,14 @@ static void handleFindFile(u32 value, void* userdata)
             char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
             bool found = findAdjacentFvFile(-1, outPath);
             fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(IPC_CMD_FIND_PREV_FILE, found ? 1 : 0));
+            break;
+        }
+
+        case IPC_CMD_FIND_RANDOM_FILE:
+        {
+            char* outPath = (char*)(value & IPC_CMD_ARG_MASK);
+            bool found = findRandomFvFile(outPath);
+            fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(IPC_CMD_FIND_RANDOM_FILE, found ? 1 : 0));
             break;
         }
     }

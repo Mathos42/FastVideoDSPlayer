@@ -8,6 +8,7 @@
 #define IPC_CMD_GOTO_NEAREST_KEYFRAME 6
 #define IPC_CMD_FIND_NEXT_FILE        7
 #define IPC_CMD_FIND_PREV_FILE        8
+#define IPC_CMD_FIND_RANDOM_FILE      9
 #define IPC_CMD_SETUP_DLDI            13
 #define IPC_CMD_HANDSHAKE             15
 

@@ -11,9 +11,12 @@ public:
     enum NavAction
     {
         NAV_ACTION_NONE,
-        NAV_ACTION_NEXT,
-        NAV_ACTION_PREV,
-        NAV_ACTION_EXIT
+        NAV_ACTION_NEXT,          // user pressed R/X: skip forward (or a random video, if random mode is on)
+        NAV_ACTION_PREV,          // user pressed L/Y: skip back (or a random video, if random mode is on)
+        NAV_ACTION_VIDEO_ENDED,   // the video reached its end on its own
+        NAV_ACTION_TOGGLE_LOOP,   // user pressed START
+        NAV_ACTION_TOGGLE_RANDOM, // user pressed SELECT
+        NAV_ACTION_EXIT           // user pressed B
     };
 
 private:
@@ -59,11 +62,14 @@ public:
 
     void Initialize();
 
-    // Returns NAV_ACTION_NEXT/NAV_ACTION_PREV if the user requested to
-    // switch videos this frame (L = previous, R = next), NAV_ACTION_EXIT
-    // if the user requested to quit (B), NAV_ACTION_NONE otherwise. The
-    // caller is expected to stop calling Update() on this controller and
-    // handle the request (load the new video / exit) when this returns
-    // non-none.
+    // Returns the action requested this frame (see NavAction), or
+    // NAV_ACTION_NONE if nothing needs handling. The caller owns the
+    // persistent state (current path, loop/random flags) and is expected to
+    // stop calling Update() on this controller and act accordingly (load a
+    // new video / toggle a flag / exit) whenever this returns non-none.
     NavAction Update();
+
+    // Shows a brief on-screen message (e.g. filename + loop/random state,
+    // or a toggle confirmation). line2 may be NULL for a single-line message.
+    void ShowMessage(const char* line1, const char* line2);
 };

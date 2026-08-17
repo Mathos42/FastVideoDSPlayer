@@ -17,12 +17,36 @@ static PlayerController* sPlayerController;
 
 extern u8 gDldiStub[];
 
-// scratch buffer used to receive the previous/next path found by the arm7
-// (must be writable by the arm7 CPU, so plain main RAM, and cacheline
+// scratch buffer used to receive the previous/next/random path found by the
+// arm7 (must be writable by the arm7 CPU, so plain main RAM, and cacheline
 // aligned so we can safely invalidate it)
 static char sAdjacentPath[FV_MAX_PATH_LEN] ALIGN(32);
 
+// path of the video currently playing, kept around so we can: show its
+// filename in the on-screen toast, and reload it when "loop" is enabled
+static char sCurPath[FV_MAX_PATH_LEN];
+
 static bool sCanUseWram;
+static bool sLoopEnabled = false;
+static bool sRandomEnabled = false;
+
+// returns the filename part of a path (after the last '/'), for display
+static const char* GetFileName(const char* path)
+{
+    const char* slash = strrchr(path, '/');
+    return slash ? slash + 1 : path;
+}
+
+// shows the filename of the video at sCurPath plus the current loop/random
+// state as a brief on-screen toast
+static void ShowVideoMessage()
+{
+    if (!sPlayerController)
+        return;
+    char line2[32];
+    snprintf(line2, sizeof(line2), "BOUCLE:%s  ALEA:%s", sLoopEnabled ? "ON " : "OFF", sRandomEnabled ? "ON" : "OFF");
+    sPlayerController->ShowMessage(GetFileName(sCurPath), line2);
+}
 
 // Loads and starts the video at path. Destroys/replaces the current player
 // and controller as needed. Returns false if the video could not be loaded
@@ -37,7 +61,10 @@ static bool loadAndStartVideo(const char* path)
         fv_destroyPlayer(&sPlayer);
     }
 
-    if (!fv_initPlayer(&sPlayer, path, sCanUseWram))
+    strncpy(sCurPath, path, sizeof(sCurPath) - 1);
+    sCurPath[sizeof(sCurPath) - 1] = 0;
+
+    if (!fv_initPlayer(&sPlayer, sCurPath, sCanUseWram))
     {
         fv_destroyPlayer(&sPlayer); // free whatever fv_initPlayer allocated before failing
         return false;
@@ -62,7 +89,23 @@ static void switchToAdjacentVideo(bool next)
         return; // no other video found next to the current one, keep playing
 
     DC_InvalidateRange(sAdjacentPath, sizeof(sAdjacentPath));
-    loadAndStartVideo(sAdjacentPath);
+    if (loadAndStartVideo(sAdjacentPath))
+        ShowVideoMessage();
+}
+
+// Asks the arm7 for a random ".fv" file (other than the current one) in the
+// same folder as the video currently playing, and switches to it if found.
+static void switchToRandomVideo()
+{
+    fifoSendValue32(FIFO_USER_02, IPC_CMD_PACK(IPC_CMD_FIND_RANDOM_FILE, (u32)sAdjacentPath));
+    fifoWaitValue32(FIFO_USER_02);
+    u32 found = fifoGetValue32(FIFO_USER_02) & IPC_CMD_ARG_MASK;
+    if (!found)
+        return; // no other video found next to the current one, keep playing
+
+    DC_InvalidateRange(sAdjacentPath, sizeof(sAdjacentPath));
+    if (loadAndStartVideo(sAdjacentPath))
+        ShowVideoMessage();
 }
 
 int main(int argc, char** argv)
@@ -131,15 +174,56 @@ int main(int argc, char** argv)
 
     if (loadAndStartVideo(filePath))
     {
-        while (sPlayerController)
+        ShowVideoMessage();
+        bool shouldExit = false;
+        while (sPlayerController && !shouldExit)
         {
             PlayerController::NavAction action = sPlayerController->Update();
-            if (action == PlayerController::NAV_ACTION_NEXT)
-                switchToAdjacentVideo(true);
-            else if (action == PlayerController::NAV_ACTION_PREV)
-                switchToAdjacentVideo(false);
-            else if (action == PlayerController::NAV_ACTION_EXIT)
-                break;
+            switch (action)
+            {
+                case PlayerController::NAV_ACTION_NEXT:
+                    if (sRandomEnabled)
+                        switchToRandomVideo();
+                    else
+                        switchToAdjacentVideo(true);
+                    break;
+
+                case PlayerController::NAV_ACTION_PREV:
+                    if (sRandomEnabled)
+                        switchToRandomVideo();
+                    else
+                        switchToAdjacentVideo(false);
+                    break;
+
+                case PlayerController::NAV_ACTION_VIDEO_ENDED:
+                    if (sLoopEnabled)
+                    {
+                        if (loadAndStartVideo(sCurPath))
+                            ShowVideoMessage();
+                    }
+                    else if (sRandomEnabled)
+                        switchToRandomVideo();
+                    else
+                        switchToAdjacentVideo(true);
+                    break;
+
+                case PlayerController::NAV_ACTION_TOGGLE_LOOP:
+                    sLoopEnabled = !sLoopEnabled;
+                    ShowVideoMessage();
+                    break;
+
+                case PlayerController::NAV_ACTION_TOGGLE_RANDOM:
+                    sRandomEnabled = !sRandomEnabled;
+                    ShowVideoMessage();
+                    break;
+
+                case PlayerController::NAV_ACTION_EXIT:
+                    shouldExit = true;
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
     else

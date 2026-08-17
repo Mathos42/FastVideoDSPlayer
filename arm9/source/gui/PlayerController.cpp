@@ -102,6 +102,16 @@ void PlayerController::UpdateKeys()
         _pendingNavAction = NAV_ACTION_EXIT;
         return;
     }
+    if (_inputProvider.Triggered(KEY_START))
+    {
+        _pendingNavAction = NAV_ACTION_TOGGLE_LOOP;
+        return;
+    }
+    if (_inputProvider.Triggered(KEY_SELECT))
+    {
+        _pendingNavAction = NAV_ACTION_TOGGLE_RANDOM;
+        return;
+    }
     if (_inputProvider.Triggered(KEY_R) || _inputProvider.Triggered(KEY_X))
     {
         _pendingNavAction = NAV_ACTION_NEXT;
@@ -209,11 +219,12 @@ PlayerController::NavAction PlayerController::Update()
     if (_player->videoEnded && _playing)
     {
         // the video reached its end: stop audio/playback cleanly (instead of
-        // leaving the last audio buffer looping forever) and try to move on
-        // to the next video in the same folder, if there is one
+        // leaving the last audio buffer looping forever) and let the caller
+        // decide what happens next (repeat / next / random, depending on
+        // the loop/random flags it owns)
         fv_pausePlayer(_player);
         _playing = false;
-        _pendingNavAction = NAV_ACTION_NEXT;
+        _pendingNavAction = NAV_ACTION_VIDEO_ENDED;
     }
 
     _view.SetPlaying(_playing);
@@ -254,4 +265,9 @@ PlayerController::NavAction PlayerController::Update()
     NavAction action = _pendingNavAction;
     _pendingNavAction = NAV_ACTION_NONE;
     return action;
+}
+
+void PlayerController::ShowMessage(const char* line1, const char* line2)
+{
+    _view.SetMessage(line1, line2);
 }

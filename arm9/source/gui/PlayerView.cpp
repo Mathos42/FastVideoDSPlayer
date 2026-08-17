@@ -13,6 +13,57 @@ PlayerView::PlayerView() : _robotoRegular10(RobotoRegular10_ntft)
 {
 }
 
+// Decodes the next character from a UTF-8 string, returning it as a Latin-1
+// codepoint (0-255) when possible so it can index NtftFont's 256-entry
+// character table. Understands plain ASCII plus 2-byte UTF-8 sequences that
+// map onto the Latin-1 Supplement block (accented French letters: é, è, à,
+// ç, ù, â, ê, î, ô, û, and their uppercase forms all fall in this range).
+// Anything else is passed through as-is (best effort). Advances *text.
+static unsigned char DecodeNextChar(const char** text)
+{
+    unsigned char c = (unsigned char)**text;
+    if (c == 0)
+        return 0;
+    if ((c & 0xE0) == 0xC0 && ((*text)[1] & 0xC0) == 0x80)
+    {
+        // 2-byte UTF-8 sequence; only C2/C3 leads (Latin-1 Supplement,
+        // U+0080-U+00FF) decode to something this font could plausibly have
+        unsigned char c2 = (unsigned char)(*text)[1];
+        *text += 2;
+        return (unsigned char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+    }
+    (*text)++;
+    return c;
+}
+
+int PlayerView::RenderTextLine(const char* text, u16* tileAddr, int maxChars)
+{
+    int n = 0;
+    unsigned char c;
+    while (n < maxChars && (c = DecodeNextChar(&text)) != 0)
+    {
+        char single[2] = { (char)c, 0 };
+        memset(_textTmpBuf, 0, sizeof(_textTmpBuf));
+        _robotoRegular10.CreateStringData(single, _textTmpBuf, CHAR_CELL_W);
+        u16 addr = _subObj.Alloc(CHAR_CELL_W * CHAR_CELL_H / 2) >> 5;
+        uiutil_convertToObj(_textTmpBuf, CHAR_CELL_W, CHAR_CELL_H, CHAR_CELL_W, &SPRITE_GFX_SUB[addr << 4]);
+        tileAddr[n] = addr;
+        n++;
+    }
+    return n;
+}
+
+int PlayerView::PlaceTextLine(SpriteEntry* oams, const u16* tileAddr, int len, int x, int y, int palette)
+{
+    for (int i = 0; i < len; i++)
+    {
+        oams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_TALL | y;
+        oams[i].attribute[1] = ATTR1_SIZE_8 | (x + i * CHAR_CELL_W);
+        oams[i].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(palette) | tileAddr[i];
+    }
+    return len;
+}
+
 void PlayerView::Initialize()
 {
     decompress(playBgTiles, BG_GFX_SUB, LZ77Vram);
@@ -126,6 +177,19 @@ void PlayerView::Initialize()
     dmaCopyWords(3, iconPauseTiles, &SPRITE_GFX_SUB[_pauseIconObjAddr << 4], iconPauseTilesLen);
 
     _playing = false;
+
+    // permanent button-legend text, rendered once and kept for the whole
+    // playback session (unlike the toast messages below, it never expires)
+    _legendLine1Len = RenderTextLine("L/Y:PREC R/X:SUIV B:QUITTER", _legendLine1TileAddr, MAX_LEGEND_CHARS);
+    _legendLine2Len = RenderTextLine("START:BOUCLE  SELECT:ALEA", _legendLine2TileAddr, MAX_LEGEND_CHARS);
+
+    // everything allocated from here on is transient "toast" text: each
+    // call to SetMessage() rewinds back to this point first, so it doesn't
+    // grow unbounded in VRAM as the message changes over and over
+    _msgVramCheckpoint = _subObj.GetState();
+    _msgLine1Len = 0;
+    _msgLine2Len = 0;
+    _msgVisible = false;
 }
 
 int PlayerView::RenderColon(SpriteEntry* oam, int x, int y)
@@ -165,7 +229,9 @@ void PlayerView::Update()
 {
     _subOam.Clear();
 
-    SpriteEntry* oams = _subOam.AllocOams(14);
+    int msgOamCount = _msgVisible ? (_msgLine1Len + _msgLine2Len) : 0;
+    int totalOams = 14 + _legendLine1Len + _legendLine2Len + msgOamCount;
+    SpriteEntry* oams = _subOam.AllocOams(totalOams);
     memcpy(&oams[0], _curTimeOams, sizeof(_curTimeOams));
     memcpy(&oams[5], _totalTimeOams, sizeof(_totalTimeOams));
 
@@ -184,6 +250,30 @@ void PlayerView::Update()
     oams[10].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | (146 + 4);
     oams[10].attribute[1] = ATTR1_SIZE_16 | (116 + 4);
     oams[10].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(2) | (_playing ? _pauseIconObjAddr : _playIconObjAddr);
+
+    // permanent button-legend, top of screen
+    int idx = 14;
+    idx += PlaceTextLine(&oams[idx], _legendLine1TileAddr, _legendLine1Len, 4, 2, 1);
+    idx += PlaceTextLine(&oams[idx], _legendLine2TileAddr, _legendLine2Len, 4, 19, 1);
+
+    // temporary toast (filename + loop/random state, or a toggle confirmation)
+    if (_msgVisible)
+    {
+        idx += PlaceTextLine(&oams[idx], _msgLine1TileAddr, _msgLine1Len, 4, 44, 1);
+        idx += PlaceTextLine(&oams[idx], _msgLine2TileAddr, _msgLine2Len, 4, 61, 1);
+
+        if (_curTime >= _msgHideAtTime)
+            _msgVisible = false;
+    }
+}
+
+void PlayerView::SetMessage(const char* line1, const char* line2)
+{
+    _subObj.SetState(_msgVramCheckpoint); // reclaim VRAM used by the previous toast, if any
+    _msgLine1Len = RenderTextLine(line1, _msgLine1TileAddr, MAX_MSG_CHARS);
+    _msgLine2Len = line2 ? RenderTextLine(line2, _msgLine2TileAddr, MAX_MSG_CHARS) : 0;
+    _msgVisible = true;
+    _msgHideAtTime = _curTime + 3; // hide 3 (video-timeline) seconds from now
 }
 
 void PlayerView::VBlank()
