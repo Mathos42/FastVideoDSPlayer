@@ -31,9 +31,8 @@ L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de 
 
 Pour encoder les vidéos utilisez FastVideoDSEncoder : https://github.com/Gericom/FastVideoDSEncoder  
 Fichiers .bat pour :  
-Encoder 1 seule vidéo : https://www.hiraven.com/FastVideoDS/FastVideoDS.bat  
-Encoder plusieurs vidéos : https://www.hiraven.com/FastVideoDS/Encodage_multiple.bat  
-Encoder tout un répertoire de vidéos : https://www.hiraven.com/FastVideoDS/Encodage_répertoire.bat  
+Encoder une ou plusieurs vidéos : https://www.hiraven.com/FastVideoDS/Encodage_multiple.bat  
+Encoder tout un répertoire de vidéos : https://www.hiraven.com/FastVideoDS/Encodage_repertoire.bat  
 
 --------------------------------------------------------------------------------------
 FastVideoDSPlayer 2
@@ -64,3 +63,12 @@ The touchscreen allows you to play or pause the video, as well as navigate throu
 
 ## Libraries Used
 - [FatFS](http://elm-chan.org/fsw/ff/00index_e.html)
+
+--------------------------------------------------------------------------------------
+
+To encode videos, use FastVideoDSEncoder: https://github.com/Gericom/FastVideoDSEncoder  
+.bat files for :  
+Encoding one or multiple videos : https://www.hiraven.com/FastVideoDS/Encodage_multiple.bat  
+Encoding an entire folder of videos : https://www.hiraven.com/FastVideoDS/Encodage_repertoire.bat  
+
+--------------------------------------------------------------------------------------
