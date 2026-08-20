@@ -20,6 +20,8 @@ Lecteur pour le format FastVideoDS. Sur votre carte SD avec TWiLight Menu++ d'in
 - L/Y - Vidéo précédente
 - R/X - Vidéo suivante
 - B - Retour à la liste des vidéos
+- START - Activer/Désactiver la lecture en boucle de la piste
+- SELECT - Activer/Désactiver la lecture aléatoire
 
 ### Toucher
 L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de se déplacer dans la vidéo en appuyant ou en faisant glisser la barre de défilement.
@@ -57,6 +59,9 @@ A player for the FastVideoDS format. On your SD card with TWiLight Menu++ instal
 -    L/Y – Previous video
 -    R/X – Next video
 -    B – Return to the video list
+-    START - Turn track repeat on/off
+-    SELECT - Turn shuffle on/off
+
 
 ### Touch
 The touchscreen allows you to play or pause the video, as well as navigate through it by tapping or dragging the scroll bar.
