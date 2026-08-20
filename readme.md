@@ -29,6 +29,14 @@ L'écran tactile permet de lancer ou de mettre en pause la vidéo, ainsi que de 
 
 --------------------------------------------------------------------------------------
 
+Pour encoder les vidéos utilisez FastVideoDSEncoder : https://github.com/Gericom/FastVideoDSEncoder
+Fichiers .bat pour :
+Encoder 1 seule vidéo : https://www.hiraven.com/FastVideoDS/FastVideoDS.bat
+Encoder plusieurs vidéos : https://www.hiraven.com/FastVideoDS/Encodage multiple.bat
+Encoder tout un répertoire de vidéos : https://www.hiraven.com/FastVideoDS/Encodage répertoire.bat
+
+
+--------------------------------------------------------------------------------------
 FastVideoDSPlayer 2
 ===================
 A player for the FastVideoDS format. On your SD card with TWiLight Menu++ installed, place the FastVideoDS.nds file in the ‘_nds\apps’ folder, then play your videos. Use [FastVideoDS Encoder](https://github.com/Gericom/FastVideoDSEncoder) to encode your videos.
