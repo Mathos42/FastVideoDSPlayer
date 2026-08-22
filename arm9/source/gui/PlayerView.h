@@ -42,11 +42,16 @@ class PlayerView
     bool _playing;
 
     // --- generic small on-screen text (help legend + toast messages) ---
-    // fixed-width 8x16 cell per character: simple and safe (avoids the
-    // trickier per-character proportional-width bookkeeping used for the
-    // digit display above), at the cost of slightly uneven spacing
-    static const int CHAR_CELL_W = 8;
+    // each character is rendered into a 16x16 sprite (wide enough that no
+    // glyph gets clipped/skipped, even wide ones like 'm' or 'M' - an 8px
+    // buffer turned out to be too narrow and silently dropped those), but
+    // consecutive characters are placed only CHAR_ADVANCE_W apart (tighter
+    // than the sprite itself) to keep the text reasonably dense; this
+    // relies on glyphs being left-aligned with blank space on their right
+    // within the 16px cell, which holds for all but the widest characters
+    static const int CHAR_CELL_W = 16;
     static const int CHAR_CELL_H = 16;
+    static const int CHAR_ADVANCE_W = 8;
     static const int MAX_LEGEND_CHARS = 32; // per legend line
     static const int MAX_MSG_CHARS = 28;    // per toast line
 

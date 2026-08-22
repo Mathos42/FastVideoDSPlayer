@@ -57,8 +57,8 @@ int PlayerView::PlaceTextLine(SpriteEntry* oams, const u16* tileAddr, int len, i
 {
     for (int i = 0; i < len; i++)
     {
-        oams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_TALL | y;
-        oams[i].attribute[1] = ATTR1_SIZE_8 | (x + i * CHAR_CELL_W);
+        oams[i].attribute[0] = ATTR0_NORMAL | ATTR0_TYPE_NORMAL | ATTR0_COLOR_16 | ATTR0_SQUARE | y;
+        oams[i].attribute[1] = ATTR1_SIZE_16 | (x + i * CHAR_ADVANCE_W);
         oams[i].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(palette) | tileAddr[i];
     }
     return len;
