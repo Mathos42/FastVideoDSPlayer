@@ -11,6 +11,7 @@ Lecteur pour le format FastVideoDS. Sur votre carte SD avec TWiLight Menu++ d'in
 - Prise en charge d'Argv (à utiliser avec TWiLight Menu++ par exemple)
 - Commandes vidéo : lecture/pause, vidéo suivante, précédente, lecture automatique de la vidéo suivante dans le répertoire et recherche par image clé
 - Désactive le rétroéclairage de l'écran inférieur pendant la lecture pour économiser de l'énergie
+- Prise en compte des lettres avec accents dans les noms de répertoires et de fichiers
 
 ## Contrôles
 ### Boutons
@@ -50,6 +51,7 @@ A player for the FastVideoDS format. On your SD card with TWiLight Menu++ instal
 -    Support for Argv (for use with TWiLight Menu++, for example)
 -    Video controls: play/pause, next video, previous video, auto-play next video in the folder and keyframe search
 -    Disables the lower screen’s backlight during playback to save power
+-    Handling accented letters in directory and file names
 
 ## Controls
 ### Buttons
