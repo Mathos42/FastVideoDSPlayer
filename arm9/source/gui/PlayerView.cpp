@@ -229,8 +229,8 @@ void PlayerView::Update()
 {
     _subOam.Clear();
 
-    int msgOamCount = _msgVisible ? (_msgLine1Len + _msgLine2Len) : 0;
-    int totalOams = 14 + _legendLine1Len + _legendLine2Len + msgOamCount;
+    int msgOamCount = _msgVisible ? (_legendLine1Len + _legendLine2Len + _msgLine1Len + _msgLine2Len) : 0;
+    int totalOams = 14 + msgOamCount;
     SpriteEntry* oams = _subOam.AllocOams(totalOams);
     memcpy(&oams[0], _curTimeOams, sizeof(_curTimeOams));
     memcpy(&oams[5], _totalTimeOams, sizeof(_totalTimeOams));
@@ -251,14 +251,14 @@ void PlayerView::Update()
     oams[10].attribute[1] = ATTR1_SIZE_16 | (116 + 4);
     oams[10].attribute[2] = ATTR2_PRIORITY(3) | ATTR2_PALETTE(2) | (_playing ? _pauseIconObjAddr : _playIconObjAddr);
 
-    // permanent button-legend, top of screen
-    int idx = 14;
-    idx += PlaceTextLine(&oams[idx], _legendLine1TileAddr, _legendLine1Len, 4, 2, 1);
-    idx += PlaceTextLine(&oams[idx], _legendLine2TileAddr, _legendLine2Len, 4, 19, 1);
-
-    // temporary toast (filename + loop/random state, or a toggle confirmation)
+    // button-legend + toast (filename + loop/random state, or a toggle
+    // confirmation): both shown together on demand (touch screen / START /
+    // SELECT), hidden the rest of the time
     if (_msgVisible)
     {
+        int idx = 14;
+        idx += PlaceTextLine(&oams[idx], _legendLine1TileAddr, _legendLine1Len, 4, 2, 1);
+        idx += PlaceTextLine(&oams[idx], _legendLine2TileAddr, _legendLine2Len, 4, 19, 1);
         idx += PlaceTextLine(&oams[idx], _msgLine1TileAddr, _msgLine1Len, 4, 44, 1);
         idx += PlaceTextLine(&oams[idx], _msgLine2TileAddr, _msgLine2Len, 4, 61, 1);
 

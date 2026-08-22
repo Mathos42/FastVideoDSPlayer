@@ -16,6 +16,7 @@ public:
         NAV_ACTION_VIDEO_ENDED,   // the video reached its end on its own
         NAV_ACTION_TOGGLE_LOOP,   // user pressed START
         NAV_ACTION_TOGGLE_RANDOM, // user pressed SELECT
+        NAV_ACTION_SHOW_INFO,     // user tapped the bottom screen away from the other touch zones
         NAV_ACTION_EXIT           // user pressed B
     };
 
