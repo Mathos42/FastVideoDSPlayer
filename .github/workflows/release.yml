@@ -1,0 +1,33 @@
+name: Build release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # pinned to a date before libnds v2.0 ("calico"), which removed the
+    # classic FIFO API (fifoSendValue32/FIFO_USER_*) this project relies on
+    container: devkitpro/devkitarm:20240918
+    name: Build with Docker using devkitARM
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Make application
+        run: |
+          make
+      - name: Publish build to GH Actions
+        uses: actions/upload-artifact@v4
+        with:
+          path: FastVideoDS.nds
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            FastVideoDS.nds
