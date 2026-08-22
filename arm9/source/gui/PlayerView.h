@@ -1,0 +1,101 @@
+#pragma once
+
+#include "core/VramManager.h"
+#include "core/OamManager.h"
+#include "core/NtftFont.h"
+
+class PlayerView
+{
+    VramManager _subObj;
+    OamManager _subOam;
+    NtftFont _robotoRegular10;
+
+    u8 _textTmpBuf[16 * 16];
+
+    u16 _oneDigitObjAddr;
+    s8 _oneDigitOffset[10];
+    u8 _oneDigitWidth[10];
+    s8 _oneDigitEndOffset[10];
+
+    u16 _twoDigitObjAddr;
+    s8 _twoDigitOffset[/*100*/60];
+    u8 _twoDigitWidth[/*100*/60];
+    s8 _twoDigitEndOffset[/*100*/60];
+
+    u16 _colonObjAddr;
+    s8 _colonOffset;
+    u8 _colonWidth;
+
+    u32 _curTime;
+
+    SpriteEntry _curTimeOams[5];
+
+    u32 _totalTime;
+    u32 _invTotalTime;
+
+    SpriteEntry _totalTimeOams[5];
+
+    u16 _circleObjAddr;
+    u16 _playIconObjAddr;
+    u16 _pauseIconObjAddr;
+
+    bool _playing;
+
+    // --- generic small on-screen text (help legend + toast messages) ---
+    // fixed-width 8x16 cell per character: simple and safe (avoids the
+    // trickier per-character proportional-width bookkeeping used for the
+    // digit display above), at the cost of slightly uneven spacing
+    static const int CHAR_CELL_W = 8;
+    static const int CHAR_CELL_H = 16;
+    static const int MAX_LEGEND_CHARS = 32; // per legend line
+    static const int MAX_MSG_CHARS = 28;    // per toast line
+
+    u16 _legendVramAfterFixed;              // VramManager checkpoint right after digits/circle/icons
+    u16 _legendLine1TileAddr[MAX_LEGEND_CHARS];
+    int _legendLine1Len;
+    u16 _legendLine2TileAddr[MAX_LEGEND_CHARS];
+    int _legendLine2Len;
+
+    u16 _msgVramCheckpoint; // VramManager checkpoint right after the (permanent) legend
+    u16 _msgLine1TileAddr[MAX_MSG_CHARS];
+    int _msgLine1Len;
+    u16 _msgLine2TileAddr[MAX_MSG_CHARS];
+    int _msgLine2Len;
+    bool _msgVisible;
+    u32 _msgHideAtTime; // video timeline (_curTime) at which the toast should hide
+
+    // renders `text` as a row of individual 8x16 character sprites (tile
+    // data only; OAM placement happens every frame in Update()). Returns
+    // the number of characters actually rendered (<= maxChars). Handles a
+    // small subset of UTF-8 (Latin-1 Supplement, e.g. accented French
+    // letters) so filenames with accents display reasonably.
+    int RenderTextLine(const char* text, u16* tileAddr, int maxChars);
+
+    // draws a previously-rendered line (see RenderTextLine) as OAM sprites
+    // starting at (x,y). Returns the number of OAM entries used.
+    int PlaceTextLine(SpriteEntry* oams, const u16* tileAddr, int len, int x, int y, int palette);
+
+    int RenderColon(SpriteEntry* oam, int x, int y);
+    int RenderSingleDigit(SpriteEntry* oam, int digit, int x, int y);
+    int RenderDoubleDigit(SpriteEntry* oam, int digits, int x, int y);
+
+public:
+
+    PlayerView();
+
+    void Initialize();
+    void Update();
+    void VBlank();
+
+    void SetTotalTime(u32 totalTime);
+    void SetCurrentTime(u32 currentTime);
+
+    void SetPlaying(bool playing)
+    {
+        _playing = playing;
+    }
+
+    // shows a temporary 1- or 2-line message (e.g. filename + loop/random
+    // state) for a few seconds. line2 may be NULL for a single-line message.
+    void SetMessage(const char* line1, const char* line2);
+};
